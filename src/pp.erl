@@ -19,7 +19,12 @@
 %%%-------------------------------------------------------------------
 -module(pp).
 -export([model_insert/2, model_patch/3, model_filter/3]).
--export([model/1, theme/1, fields/1, form/2, form/3, query/1]).
+-export([model/1, theme/1, backend/1, fields/1, form/2, form/3, query/1]).
+-export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
+-export([all/1]).
+
+-export([jsonp/1, get_current_iso_time/0, to_binary/1, q/2, q/3]).
+-export([url/1, url/2, url/3, url/4]).
 
 %% 模型将被存储在ets:pp_model中
 %% 键为模型名称
@@ -36,6 +41,14 @@ theme(ModelName) ->
     Result1 = ets:lookup(pp_theme, ModelName),
     case Result1 of
         [] -> pp_theme_default;
+        [{_, Result}|_] -> Result
+    end.
+
+%% 数据存储后端
+backend(ModelName) ->
+    Result1 = ets:lookup(pp_db, ModelName),
+    case Result1 of
+        [] -> pp_db_adapter_ets;
         [{_, Result}|_] -> Result
     end.
 
@@ -106,3 +119,26 @@ fields(ModelName, Data) ->
 %% 查询经过动态渲染的表单中的值
 query(ModelName) ->
     apply(theme(ModelName), query, [fields(ModelName)]).
+
+%% db ------------------------------------------------------
+init  (Model)               -> apply(backend(Model), init,   [Model]).
+create(Model, Data)         -> apply(backend(Model), create, [Model, Data]).
+create(Model, Id, Data)     -> apply(backend(Model), create, [Model, Id, Data]).
+get   (Model, Id)           -> apply(backend(Model), get,    [Model, Id]).
+update(Model, Id, Data)     -> apply(backend(Model), update, [Model, Id, Data]).
+patch (Model, Id, Data)     -> apply(backend(Model), patch,  [Model, Id, Data]).
+delete(Model, Id)           -> apply(backend(Model), delete, [Model, Id]).
+search(Model, Fun, Options) -> apply(backend(Model), search, [Model, Fun, Options]).
+all   (Model)               -> apply(backend(Model), all,    [Model]).
+
+%% utils ----------------------------------------------------
+%% utils methods
+to_binary(Term)        -> pp_utils:to_binary(Term).
+jsonp(Json)            -> pp_utils:jsonp(Json).
+get_current_iso_time() -> pp_utils:get_current_iso_time().
+q(Key, Map)            -> pp_utils:q(Key, Map).
+q(Key, Map, Default)   -> pp_utils:q(Key, Map, Default).
+url(T1)                -> pp_utils:url(T1).
+url(T1, T2)            -> pp_utils:url(T1, T2).
+url(T1, T2, T3)        -> pp_utils:url(T1, T2, T3).
+url(T1, T2, T3, T4)    -> pp_utils:url(T1, T2, T3, T4).

@@ -12,7 +12,7 @@
 -export([jsonp/1, jsonp/2]).
 -export([iso_to_datetime/1, human_date/1, human_datetime/1, iso_to_human_datetime/1,
          get_current_iso_time/0, get_iso_time/1]).
--export([to_binary/1, to_integer/1, q/2]).
+-export([to_binary/1, to_integer/1, q/2, q/3]).
 -export([confirm_sync/2]).
 -export([url/1, url/2, url/3, url/4]).
 -export([bucket/1, search_index/1]).
@@ -91,8 +91,8 @@ timer(From, Fun, Timeout, Maxtimes) ->
     end.
 
 %% 快速读取包含中文的maps字段
-q(Element, Data) ->
-    maps:get(to_binary(Element), Data).
+q(Element, Data) -> maps:get(to_binary(Element), Data).
+q(Element, Data, Default) -> maps:get(to_binary(Element), Data, Default).
 
 url(T1) -> io_lib:format("/~s", [to_binary(T1)]).
 url(T1, T2) -> io_lib:format("/~s/~s", [to_binary(T1), to_binary(T2)]).
