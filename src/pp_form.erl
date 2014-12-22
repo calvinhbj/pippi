@@ -65,9 +65,9 @@ init_field(Name, Option) ->
 %% FormName用来指定要选择的渲染表单
 %% 默认theme提供了new,edit,show,index等实用的表单
 form(ModelName, FormName) ->
-    apply(theme(ModelName), FormName, [fields(ModelName)]).
+    apply(theme(ModelName), form, [FormName, fields(ModelName)]).
 form(ModelName, FieldData, FormName) ->
-    apply(theme(ModelName), FormName, [fields(ModelName, FieldData)]).
+    apply(theme(ModelName), form, [FormName, fields(ModelName, FieldData)]).
 
 %% 提取需要渲染的表单字段
 %% 以按照定义时排序的列表返回(该顺序在存储为maps已经打乱)

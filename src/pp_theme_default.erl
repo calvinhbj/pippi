@@ -9,19 +9,20 @@
 %%%-------------------------------------------------------------------
 -module(pp_theme_default).
 -include_lib("nitrogen_core/include/wf.hrl").
--export([new/1, edit/1, show/1, query/1]).
--export([label_control/1, edit_control/1, show_control/1]).
+-export([form/2, query/1, label_control/1, edit_control/1, show_control/1]).
 
 %% {Key, Option#{}}
-new(Fields) -> edit(Fields).
-edit(Fields) ->
+form(name, Fields) -> form(edit, Fields);
+form(edit, Fields) ->
     lists:map(fun({_, #{edit_control:=[M, F]}=Field}) ->
         #panel{body=M:F(Field)}
-    end, Fields).
-show(Fields) ->
+    end, Fields);
+form(show, Fields) ->
     lists:map(fun({_, #{show_control:=[M, F]}=Field}) ->
         #panel{body=[M:F(Field), #hr{}]}
-    end, Fields).
+    end, Fields);
+form(_, _) -> [].
+
 
 query(Fields) ->
     List = lists:map(fun({_, #{key := Key, seq := Id, field_type := Type}}) ->
