@@ -17,8 +17,9 @@
 %%% @end
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
--module(pp_form).
--export([init_model/2, model/1, theme/1, fields/1, form/2, form/3, query/1]).
+-module(pp).
+-export([model_insert/2, model_patch/3, model_filter/3]).
+-export([model/1, theme/1, fields/1, form/2, form/3, query/1]).
 
 %% 模型将被存储在ets:pp_model中
 %% 键为模型名称
@@ -26,7 +27,7 @@
 model(ModelName) ->
     Result1 = ets:lookup(pp_model, ModelName),
     case Result1 of
-        [] ->  [];
+        [] ->  #{};
         [{_, Result}|_] -> Result
     end.
 
@@ -39,11 +40,30 @@ theme(ModelName) ->
     end.
 
 %% 创建模型
-init_model(ModelName, FieldsDesc) ->
+model_insert(ModelName, FieldsDesc) ->
     Fields = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
     ets:insert(pp_model, {ModelName, maps:from_list(Fields)}).
+
+%% 补充模型, 从M1补充生成M2
+model_patch(ModelName1, ModelName2, FieldsDesc) ->
+    Fields1 = lists:map(fun({Name, Option}) ->
+        { pp_utils:to_binary(Name), init_field(Name, Option) }
+    end, FieldsDesc),
+    Fields = maps:merge(maps:from_list(Fields1), model(ModelName1)),
+    ets:insert(pp_model, {ModelName2, Fields}).
+
+%% 裁剪模型, 从M1裁剪生成M2
+model_filter(ModelName1, ModelName2, FieldsDesc) ->
+    Fields1 = maps:to_list(model(ModelName1)),
+    Fields = lists:filter(fun({Name1, _Option1}) ->
+        lists:any(fun({Name2, _Option2}) ->
+            Name1 =/= pp_utils:to_binary(Name2)
+        end, FieldsDesc)
+    end, Fields1),
+    ets:insert(pp_model, {ModelName2, maps:from_list(Fields)}).
+
 init_field(Name, Option) ->
     FieldType = proplists:get_value(type, Option, textbox),
     Label1 = proplists:get_value(label, Option, Name),
