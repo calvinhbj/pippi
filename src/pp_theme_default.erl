@@ -12,7 +12,7 @@
 -export([form/2, query/1, label_control/1, edit_control/1, show_control/1]).
 
 %% {Key, Option#{}}
-form(name, Fields) -> form(edit, Fields);
+form(new, Fields) -> form(edit, Fields);
 form(edit, Fields) ->
     lists:map(fun({_, #{edit_control:=[M, F]}=Field}) ->
         #panel{body=M:F(Field)}
