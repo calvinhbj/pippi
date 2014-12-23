@@ -18,7 +18,7 @@
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp).
--export([model_create/3, model_clone/5]).
+-export([model_create/3, model_clone/3, model_clone/5]).
 -export([model/2, theme/1, backend/1, fields/2, form/2, form/3, query/2]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
@@ -61,29 +61,36 @@ model_create(ModelName, FormName, FieldsDesc) ->
     end, FieldsDesc),
     true = ets:insert(pp_model, {{ModelName, FormName}, maps:from_list(Fields)}),
     ok.
-
 %% 补充方式克隆表单模型, 从Form1补充生成Form2
+model_clone(ModelName, FormName1, FormName2) ->
+    model_clone(cut, ModelName, FormName1, FormName2, []).
 model_clone(patch, ModelName, Form1, Form2, FieldsDesc) ->
     Fields1 = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
     Fields = maps:merge(maps:from_list(Fields1), model(ModelName, Form1)),
-    ets:insert(pp_model, {{ModelName, Form2}, Fields});
+    true = ets:insert(pp_model, {{ModelName, Form2}, Fields}),
+    ok;
 %% 裁剪方式克隆表单模型, 从Form1裁剪生成Form2
 model_clone(cut, ModelName, FormName1, FormName2, FieldsList) ->
     Fields1 = maps:to_list(model(ModelName, FormName1)),
     Fields = lists:filter(fun({Name1, _Option1}) ->
-        lists:any(fun(Item) ->
-            %% 同时支持字段名列表和字段描述元组的列表
-            %% 避免参数混淆
-            if
-                is_tuple(Item) -> {Name2, _} = Item;
-                true -> Name2 = Item
-            end,
-            Name1 =/= pp_utils:to_binary(Name2)
-        end, FieldsList)
+        case FieldsList of
+            [] -> true;
+            _ ->
+                lists:any(fun(Item) ->
+                    %% 同时支持字段名列表和字段描述元组的列表
+                    %% 避免参数混淆
+                    if
+                        is_tuple(Item) -> {Name2, _} = Item;
+                        true -> Name2 = Item
+                    end,
+                    Name1 =/= pp_utils:to_binary(Name2)
+                end, FieldsList)
+        end
     end, Fields1),
-    ets:insert(pp_model, {{ModelName, FormName2}, maps:from_list(Fields)});
+    true = ets:insert(pp_model, {{ModelName, FormName2}, maps:from_list(Fields)}),
+    ok;
 %% 过滤方式克隆模型，从Form1生成Form2
 model_clone(select, ModelName, FormName1, FormName2, FieldsList) ->
     Fields1 = maps:to_list(model(ModelName, FormName1)),
