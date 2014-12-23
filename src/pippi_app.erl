@@ -16,7 +16,7 @@ start(_StartType, _StartArgs) ->
     %% 存储表单样式（如果用户未建立表单样式，则使用默认样式）
     ets:new(pp_theme, [named_table, public]),
     %% 存储命名的数据库配置
-    ets:new(pp_db, [named_table, public]),
+    ets:new(pp_backend, [named_table, public]),
     pippi_sup:start_link().
 
 stop(_State) ->
