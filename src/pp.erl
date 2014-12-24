@@ -18,8 +18,8 @@
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp).
--export([model_create/3, model_clone/3, model_clone/5]).
--export([model/2, theme/1, backend/1, fields/2, form/2, form/3, query/2]).
+-export([model_create/1, model_create/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
+-export([model/2, theme/1, backend/1, fields/1, fields/2, form/1, form/2, form/3, query/1, query/2]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -28,8 +28,8 @@
 
 %% 模型将被存储在ets:pp_model中
 %% {{模型名称, 表单名称}, #{字段选项...}
-model(ModelName, FormName) ->
-    Result1 = ets:lookup(pp_model, {ModelName, FormName}),
+model(Model, Form) ->
+    Result1 = ets:lookup(pp_model, {Model, Form}),
     case Result1 of
         [] ->  #{};
         [{_, Result}|_] -> Result
@@ -37,8 +37,8 @@ model(ModelName, FormName) ->
 
 %% 表单样式模块
 %% {模型名称, 模块名}
-theme(ModelName) ->
-    Result1 = ets:lookup(pp_theme, ModelName),
+theme(Model) ->
+    Result1 = ets:lookup(pp_theme, Model),
     case Result1 of
         [] -> pp_theme_default;
         [{_, Result}|_] -> Result
@@ -46,8 +46,8 @@ theme(ModelName) ->
 
 %% 数据存储后端
 %% {模型名称, 模块名}
-backend(ModelName) ->
-    Result1 = ets:lookup(pp_backend, ModelName),
+backend(Model) ->
+    Result1 = ets:lookup(pp_backend, Model),
     case Result1 of
         [] -> pp_db_adapter_ets;
         [{_, Result}|_] -> Result
@@ -55,25 +55,27 @@ backend(ModelName) ->
 
 %% 创建模型
 %%
-model_create(ModelName, FormName, FieldsDesc) ->
+model_create(Model, Form, FieldsDesc) ->
+    model_create({Model, Form, FieldsDesc}).
+model_create({Model, Form, FieldsDesc}) ->
     Fields = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
-    true = ets:insert(pp_model, {{ModelName, FormName}, maps:from_list(Fields)}),
+    true = ets:insert(pp_model, {{Model, Form}, maps:from_list(Fields)}),
     ok.
 %% 补充方式克隆表单模型, 从Form1补充生成Form2
-model_clone(ModelName, FormName1, FormName2) ->
-    model_clone(cut, ModelName, FormName1, FormName2, []).
-model_clone(patch, ModelName, Form1, Form2, FieldsDesc) ->
+model_clone(Form2, {Model, Form1}) ->
+    model_cut(Form2, {Model, Form1, []}).
+model_patch(Form2, {Model, Form1, FieldsDesc}) ->
     Fields1 = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
-    Fields = maps:merge(maps:from_list(Fields1), model(ModelName, Form1)),
-    true = ets:insert(pp_model, {{ModelName, Form2}, Fields}),
-    ok;
+    Fields = maps:merge(maps:from_list(Fields1), model(Model, Form1)),
+    true = ets:insert(pp_model, {{Model, Form2}, Fields}),
+    ok.
 %% 裁剪方式克隆表单模型, 从Form1裁剪生成Form2
-model_clone(cut, ModelName, FormName1, FormName2, FieldsList) ->
-    Fields1 = maps:to_list(model(ModelName, FormName1)),
+model_cut(Form2, {Model, Form1, FieldsList}) ->
+    Fields1 = maps:to_list(model(Model, Form1)),
     Fields = lists:filter(fun({Name1, _Option1}) ->
         case FieldsList of
             [] -> true;
@@ -89,11 +91,11 @@ model_clone(cut, ModelName, FormName1, FormName2, FieldsList) ->
                 end, FieldsList)
         end
     end, Fields1),
-    true = ets:insert(pp_model, {{ModelName, FormName2}, maps:from_list(Fields)}),
-    ok;
+    true = ets:insert(pp_model, {{Model, Form2}, maps:from_list(Fields)}),
+    ok.
 %% 过滤方式克隆模型，从Form1生成Form2
-model_clone(select, ModelName, FormName1, FormName2, FieldsList) ->
-    Fields1 = maps:to_list(model(ModelName, FormName1)),
+model_filter(Form2, {Model, Form1, FieldsList}) ->
+    Fields1 = maps:to_list(model(Model, Form1)),
     Fields = lists:filter(fun({Name1, _Option1}) ->
         lists:any(fun(Item) ->
             if
@@ -103,9 +105,7 @@ model_clone(select, ModelName, FormName1, FormName2, FieldsList) ->
             Name1 =:= pp_utils:to_binary(Name2)
         end, FieldsList)
     end, Fields1),
-    ets:insert(pp_model, {{ModelName, FormName2}, maps:from_list(Fields)});
-model_clone(_, _, _, _, _) ->
-    {error, bad_params}.
+    ets:insert(pp_model, {{Model, Form2}, maps:from_list(Fields)}).
 
 init_field(Name, Option) ->
     FieldType = proplists:get_value(type, Option, textbox),
@@ -127,28 +127,34 @@ init_field(Name, Option) ->
 
 %% FormName用来指定要选择的渲染表单
 %% 默认theme提供了new,edit,show,index等实用的表单
-form(ModelName, FormName) ->
-    apply(theme(ModelName), form, [FormName, fields(ModelName, FormName)]).
-form(ModelName, FormName, FieldData) ->
-    apply(theme(ModelName), form, [FormName, fields(ModelName, FormName, FieldData)]).
+form({Model, Form}) -> form(Model, Form);
+form({Model, Form, Fields}) -> form(Model, Form, Fields).
+form(Model, Form) ->
+    apply(theme(Model), form, [Form, fields(Model, Form)]).
+form(Model, Form, FieldData) ->
+    apply(theme(Model), form, [Form, fields(Model, Form, FieldData)]).
 
 %% 提取需要渲染的表单字段
 %% 以按照定义时排序的列表返回(该顺序在存储为maps已经打乱)
-fields(ModelName, FormName) ->
+fields({Model, Form}) -> fields(Model, Form);
+fields({Model, Form, Fields}) -> fields(Model, Form, Fields).
+fields(Model, Form) ->
     lists:sort(fun({_, #{seq:=Seq1}}, {_, #{seq:=Seq2}}) ->
         Seq1 < Seq2
-    end, maps:to_list(model(ModelName, FormName))).
-fields(ModelName, FormName, Data) ->
+    end, maps:to_list(model(Model, Form))).
+fields(Model, Form, Data1) ->
+    Data = maps:from_list(lists:map(fun({K, V}) -> {pp:to_binary(K), V} end, maps:to_list(Data1))),
     List = lists:map(fun({Key, Option}) ->
         {Key, Option#{value => maps:get(Key, Data, <<"">>)}}
-    end, maps:to_list(model(ModelName, FormName))),
+    end, maps:to_list(model(Model, Form))),
     lists:sort(fun({_, #{seq:=Seq1}}, {_, #{seq:=Seq2}}) ->
         Seq1 < Seq2
     end, List).
 
 %% 查询经过动态渲染的表单中的值
-query(ModelName, FormName) ->
-    apply(theme(ModelName), query, [fields(ModelName, FormName)]).
+query({Model, Form}) -> query(Model, Form).
+query(Model, Form) ->
+    apply(theme(Model), query, [fields(Model, Form)]).
 
 %% db ------------------------------------------------------
 init  (Model)               -> apply(backend(Model), init,   [Model]).
