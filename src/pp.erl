@@ -18,10 +18,12 @@
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp).
+-include_lib("nitrogen_core/include/wf.hrl").
+
 -export([model_set/1, model_set/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
 -export([theme/1, theme_set/2, backend/1, backend_set/2]).
 -export([model/2, fields/1, fields/2, fields/3, form/1, form/2, form/3]).
--export([query/1, query/2, querys/2, wfid/3, html_id/3]).
+-export([query/1, query/2, querys/2, wfid/3, html_id/3, validate/4]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -185,6 +187,11 @@ wfid(Model, Form, FieldName) ->
         [] -> notfound;
         _ -> lists:last(Result)
     end.
+%% 包装一个简洁的validate处理函数
+validate(Model, Form, Target, Validates) ->
+    lists:foreach(fun({FieldName, Validate}) ->
+        wf:wire(Target, wfid(Model, Form, FieldName), #validate{validators=Validate})
+    end, Validates).
 
 %% db ------------------------------------------------------
 %% 自动将所查询的键值转为二进制类型
