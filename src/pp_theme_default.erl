@@ -24,16 +24,17 @@ form(show, Fields) ->
 form(_, _) -> [].
 
 
+%% 若表单中的字段重叠，则使用最后的值作为查询结果
 query(Fields) ->
     List = lists:map(fun({_, #{key := Key, seq := Id, field_type := Type}}) ->
         case Type of
             tags ->
-                L1 = tags_to_ss(wf:q(Id)),
+                L1 = tags_to_ss(lists:last(wf:qs(Id))),
                 {Key, lists:filter(fun(I) -> I =/= <<>> end, L1)};
             checkbox ->
-                {Key, "on" =:= wf:q(Id)};
+                {Key, "on" =:= lists:last(wf:qs(Id))};
             _ ->
-                {Key, mr_utils:to_binary(wf:q(Id))}
+                {Key, pp_utils:to_binary(lists:last(wf:qs(Id)))}
         end
     end, Fields),
     maps:from_list(List).
@@ -60,8 +61,8 @@ ss_to_tags(Value1) ->
     end, Value1),
     string:join(Value, ", ").
 
-tags_to_ss(Value) -> re:split(mr_utils:to_binary(Value), ",|;|-|\s").
+tags_to_ss(Value) -> re:split(pp_utils:to_binary(Value), ",|;|-|\s").
 
 checkbox_to_s(Value) -> case Value of true -> <<"是"/utf8>>; _ -> <<"否"/utf8>> end.
 
-iso_to_localtime(Value) -> mr_utils:iso_to_human_datetime(Value).
+iso_to_localtime(Value) -> pp_utils:iso_to_human_datetime(Value).
