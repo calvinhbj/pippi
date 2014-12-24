@@ -19,7 +19,7 @@ form(edit, Fields) ->
     end, Fields);
 form(show, Fields) ->
     lists:map(fun(#{show_control:=[M, F]}=Field) ->
-        #panel{body=[M:F(Field), #hr{}]}
+        #panel{body=M:F(Field)}
     end, Fields);
 form(_, _) -> [].
 
@@ -49,10 +49,10 @@ edit_control(#{field_type:=tags,     seq:=Id, label:=Label, value:=Value}) -> [#
 edit_control(#{field_type:=checkbox, seq:=Id, label:=Label, value:=Value}) -> #checkbox{html_id=Id, id=Id, text=Label, checked=(Value=:=true)};
 edit_control(#{field_type:=time,     seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #textbox{html_id=Id, id=Id, text=Value}].
 
-show_control(#{field_type:=tags,     label:=Label, value:=Value}) -> [#h5{text=Label}, ss_to_tags(Value)];
-show_control(#{field_type:=checkbox, label:=Label, value:=Value}) -> [#h5{text=Label}, checkbox_to_s(Value)];
-show_control(#{field_type:=time,     label:=Label, value:=Value}) -> [#h5{text=Label}, iso_to_localtime(Value)];
-show_control(#{label:=Label, value:=Value}) -> [#h5{text=Label}, Value].
+show_control(#{field_type:=tags,     label:=Label, value:=Value}) -> [#h5{text=Label}, ss_to_tags(Value), #hr{}];
+show_control(#{field_type:=checkbox, label:=Label, value:=Value}) -> [#h5{text=Label}, checkbox_to_s(Value), #hr{}];
+show_control(#{field_type:=time,     label:=Label, value:=Value}) -> [#h5{text=Label}, iso_to_localtime(Value), #hr{}];
+show_control(#{label:=Label, value:=Value}) -> [#h5{text=Label}, Value, #hr{}].
 
 ss_to_tags(<<"">>) -> <<"">>;
 ss_to_tags(Value1) ->
