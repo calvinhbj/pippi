@@ -14,11 +14,11 @@
 %% {Key, Option#{}}
 form(new, Fields) -> form(edit, Fields);
 form(edit, Fields) ->
-    lists:map(fun({_, #{edit_control:=[M, F]}=Field}) ->
+    lists:map(fun(#{edit_control:=[M, F]}=Field) ->
         #panel{body=M:F(Field)}
     end, Fields);
 form(show, Fields) ->
-    lists:map(fun({_, #{show_control:=[M, F]}=Field}) ->
+    lists:map(fun(#{show_control:=[M, F]}=Field) ->
         #panel{body=[M:F(Field), #hr{}]}
     end, Fields);
 form(_, _) -> [].
@@ -26,7 +26,7 @@ form(_, _) -> [].
 
 %% 若表单中的字段重叠，则使用最后的值作为查询结果
 query(Fields) ->
-    List = lists:map(fun({_, #{key := Key, seq := Id, field_type := Type}}) ->
+    List = lists:map(fun(#{key := Key, seq := Id, field_type := Type}) ->
         case Type of
             tags ->
                 L1 = tags_to_ss(lists:last(wf:qs(Id))),

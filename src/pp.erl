@@ -19,7 +19,7 @@
 %%%-------------------------------------------------------------------
 -module(pp).
 -export([model_create/1, model_create/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
--export([model/2, theme/1, backend/1, fields/1, fields/2, form/1, form/2, form/3, query/1, query/2, querys/2]).
+-export([model/2, theme/1, backend/1, fields/1, fields/2, fields/3, form/1, form/2, form/3, query/1, query/2, querys/2]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -54,7 +54,8 @@ backend(Model) ->
     end.
 
 %% 创建模型
-%%
+%% 表单模型的元数据描述使用maps结构，这是为了使用maps的merge特性
+%% maps:merge/2可以覆盖默认配置，以方便导入配置
 model_create(Model, Form, FieldsDesc) ->
     model_create({Model, Form, FieldsDesc}).
 model_create({Model, Form, FieldsDesc}) ->
@@ -136,17 +137,19 @@ form(Model, Form, Data) ->
 
 %% 提取需要渲染的表单字段
 %% 以按照定义时排序的列表返回(该顺序在存储为maps已经打乱)
-fields({Model, Form}) -> fields(Model, Form);
-fields({Model, Form, Fields}) -> fields(Model, Form, Fields).
+fields({Model, Form}) -> fields(Model, Form).
 fields(Model, Form) ->
-    lists:sort(fun({_, #{seq:=Seq1}}, {_, #{seq:=Seq2}}) ->
+    List = lists:map(fun({_Key, Option}) ->
+        Option
+    end, maps:to_list(model(Model, Form))),
+    lists:sort(fun(#{seq:=Seq1}, #{seq:=Seq2}) ->
         Seq1 < Seq2
-    end, maps:to_list(model(Model, Form))).
+    end, List).
 fields(Model, Form, Data) ->
     List = lists:map(fun({Key, Option}) ->
-        {Key, Option#{value => maps:get(Key, Data, <<"">>)}}
+        Option#{value => maps:get(Key, Data, <<"">>)}
     end, maps:to_list(model(Model, Form))),
-    lists:sort(fun({_, #{seq:=Seq1}}, {_, #{seq:=Seq2}}) ->
+    lists:sort(fun(#{seq:=Seq1}, #{seq:=Seq2}) ->
         Seq1 < Seq2
     end, List).
 
