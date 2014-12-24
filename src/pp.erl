@@ -20,7 +20,8 @@
 -module(pp).
 -export([model_set/1, model_set/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
 -export([theme/1, theme_set/2, backend/1, backend_set/2]).
--export([model/2, fields/1, fields/2, fields/3, form/1, form/2, form/3, query/1, query/2, querys/2]).
+-export([model/2, fields/1, fields/2, fields/3, form/1, form/2, form/3]).
+-export([query/1, query/2, querys/2, wfid/3, html_id/3]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -49,6 +50,8 @@ theme_set(Model, Theme) ->
 
 %% 数据存储后端
 %% {模型名称, 模块名}
+%% @todo 以后再增加数据库的选项支持，以元组{Backend, Options}作为参数传入
+%%       其中Options为属性列表，如[{file, Filename}, {index, SearchIndex}]等
 backend(Model) ->
     Result1 = ets:lookup(pp_backend, Model),
     case Result1 of
@@ -168,6 +171,20 @@ query_acc(_Model, [], MapAcc) -> MapAcc;
 query_acc(Model, [H|T], MapAcc) ->
     MapResult = maps:merge(MapAcc, query(Model, H)),
     query_acc(Model, T, MapResult).
+%% 查询单个字段属性: wfid和html_id
+html_id(Model, Form, FieldName) -> wfid(Model, Form, FieldName).
+wfid(Model, Form, FieldName) ->
+    Fields = fields(Model, Form),
+    Result = lists:filtermap(fun(#{key:=Key, seq:=Id}) ->
+        case Key =:= to_binary(FieldName) of
+            true -> {true, Id};
+            false -> false
+        end
+    end, Fields),
+    case Result of
+        [] -> notfound;
+        _ -> lists:last(Result)
+    end.
 
 %% db ------------------------------------------------------
 %% 自动将所查询的键值转为二进制类型
