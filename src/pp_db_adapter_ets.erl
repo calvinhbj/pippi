@@ -12,17 +12,22 @@
 
 %% 表初始化
 init(Table) ->
-    ets:new(Table, [named_table, public]).
+    case ets:info(Table) of
+        undefined -> ets:new(Table, [named_table, public]);
+        _ -> exist
+    end.
 
 %% 创建数据，返回{ok, Id}
 %% Data应为maps类型
 create(Table, Data) when is_map(Data) ->
+    init(Table),
     {_, S, M} = now(),
     R = random:uniform(10000),
     Id = pp:to_binary(io_lib:format("~B-~6..0B-~4..0B", [S, M, R])),
-    ok = create(Table, Id, Data),
+    true = ets:insert(Table, {Id, Data}),
     {ok, Id}.
 create(Table, Id, Data) when is_map(Data) ->
+    init(Table),
     true = ets:insert(Table, {Id, Data}),
     ok.
 
@@ -52,6 +57,7 @@ delete(Table, Id) ->
 %% Cond 条件
 %% Option 选项: [{start, Start}, {row, Row}, {sort, Sort}]
 search(Table, Fun, _Options) ->
+    init(Table),
     search_acc(Table, ets:first(Table), Fun, []).
 
 search_acc(_Table, '$end_of_table', _Fun, Acc) ->
