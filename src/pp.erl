@@ -18,8 +18,9 @@
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp).
--export([model_create/1, model_create/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
--export([model/2, theme/1, backend/1, fields/1, fields/2, fields/3, form/1, form/2, form/3, query/1, query/2, querys/2]).
+-export([model_set/1, model_set/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
+-export([theme/1, theme_set/2, backend/1, backend_set/2]).
+-export([model/2, fields/1, fields/2, fields/3, form/1, form/2, form/3, query/1, query/2, querys/2]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -43,6 +44,8 @@ theme(Model) ->
         [] -> pp_theme_default;
         [{_, Result}|_] -> Result
     end.
+theme_set(Model, Theme) ->
+    true = ets:insert(pp_theme, {Model, Theme}), ok.
 
 %% 数据存储后端
 %% {模型名称, 模块名}
@@ -52,13 +55,15 @@ backend(Model) ->
         [] -> pp_db_adapter_dets;
         [{_, Result}|_] -> Result
     end.
+backend_set(Model, Backend) ->
+    true = ets:insert(pp_backend, {Model, Backend}), ok.
 
 %% 创建模型
 %% 表单模型的元数据描述使用maps结构，这是为了使用maps的merge特性
 %% maps:merge/2可以覆盖默认配置，以方便导入配置
-model_create(Model, Form, FieldsDesc) ->
-    model_create({Model, Form, FieldsDesc}).
-model_create({Model, Form, FieldsDesc}) ->
+model_set(Model, Form, FieldsDesc) ->
+    model_set({Model, Form, FieldsDesc}).
+model_set({Model, Form, FieldsDesc}) ->
     Fields = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
