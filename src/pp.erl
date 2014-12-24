@@ -19,7 +19,7 @@
 %%%-------------------------------------------------------------------
 -module(pp).
 -export([model_create/1, model_create/3, model_clone/2, model_patch/2, model_cut/2, model_filter/2]).
--export([model/2, theme/1, backend/1, fields/1, fields/2, form/1, form/2, form/3, query/1, query/2]).
+-export([model/2, theme/1, backend/1, fields/1, fields/2, form/1, form/2, form/3, query/1, query/2, querys/2]).
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
@@ -155,6 +155,12 @@ fields(Model, Form, Data1) ->
 query({Model, Form}) -> query(Model, Form).
 query(Model, Form) ->
     apply(theme(Model), query, [fields(Model, Form)]).
+%% 查询多个表单，并返回合并后的结果
+querys(Model, Forms) -> query_acc(Model, Forms, #{}).
+query_acc(_Model, [], MapAcc) -> MapAcc;
+query_acc(Model, [H|T], MapAcc) ->
+    MapResult = maps:merge(MapAcc, query(Model, H)),
+    query_acc(Model, T, MapResult).
 
 %% db ------------------------------------------------------
 init  (Model)               -> apply(backend(Model), init,   [Model]).
