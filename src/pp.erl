@@ -49,7 +49,7 @@ theme(Model) ->
 backend(Model) ->
     Result1 = ets:lookup(pp_backend, Model),
     case Result1 of
-        [] -> pp_db_adapter_ets;
+        [] -> pp_db_adapter_dets;
         [{_, Result}|_] -> Result
     end.
 
