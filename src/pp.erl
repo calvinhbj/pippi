@@ -131,8 +131,8 @@ form({Model, Form}) -> form(Model, Form);
 form({Model, Form, Fields}) -> form(Model, Form, Fields).
 form(Model, Form) ->
     apply(theme(Model), form, [Form, fields(Model, Form)]).
-form(Model, Form, FieldData) ->
-    apply(theme(Model), form, [Form, fields(Model, Form, FieldData)]).
+form(Model, Form, Data) ->
+    apply(theme(Model), form, [Form, fields(Model, Form, Data)]).
 
 %% 提取需要渲染的表单字段
 %% 以按照定义时排序的列表返回(该顺序在存储为maps已经打乱)
@@ -142,8 +142,7 @@ fields(Model, Form) ->
     lists:sort(fun({_, #{seq:=Seq1}}, {_, #{seq:=Seq2}}) ->
         Seq1 < Seq2
     end, maps:to_list(model(Model, Form))).
-fields(Model, Form, Data1) ->
-    Data = maps:from_list(lists:map(fun({K, V}) -> {pp:to_binary(K), V} end, maps:to_list(Data1))),
+fields(Model, Form, Data) ->
     List = lists:map(fun({Key, Option}) ->
         {Key, Option#{value => maps:get(Key, Data, <<"">>)}}
     end, maps:to_list(model(Model, Form))),
@@ -163,13 +162,14 @@ query_acc(Model, [H|T], MapAcc) ->
     query_acc(Model, T, MapResult).
 
 %% db ------------------------------------------------------
+%% 自动将所查询的键值转为二进制类型
 init  (Model)               -> apply(backend(Model), init,   [Model]).
 create(Model, Data)         -> apply(backend(Model), create, [Model, Data]).
-create(Model, Id, Data)     -> apply(backend(Model), create, [Model, Id, Data]).
-get   (Model, Id)           -> apply(backend(Model), get,    [Model, Id]).
-update(Model, Id, Data)     -> apply(backend(Model), update, [Model, Id, Data]).
-patch (Model, Id, Data)     -> apply(backend(Model), patch,  [Model, Id, Data]).
-delete(Model, Id)           -> apply(backend(Model), delete, [Model, Id]).
+create(Model, Id, Data)     -> apply(backend(Model), create, [Model, to_binary(Id), Data]).
+get   (Model, Id)           -> apply(backend(Model), get,    [Model, to_binary(Id)]).
+update(Model, Id, Data)     -> apply(backend(Model), update, [Model, to_binary(Id), Data]).
+patch (Model, Id, Data)     -> apply(backend(Model), patch,  [Model, to_binary(Id), Data]).
+delete(Model, Id)           -> apply(backend(Model), delete, [Model, to_binary(Id)]).
 search(Model, Fun, Options) -> apply(backend(Model), search, [Model, Fun, Options]).
 all   (Model)               -> apply(backend(Model), all,    [Model]).
 

@@ -19,27 +19,35 @@ init(Table) ->
 
 %% 创建数据，返回{ok, Id}
 %% Data应为maps类型
+%% 自动插入创建和最后修改时间时间戳, 使用ISO标准格式
 create(Table, Data) when is_map(Data) ->
     init(Table),
     {_, S, M} = now(),
     R = random:uniform(10000),
     Id = pp:to_binary(io_lib:format("~B-~6..0B-~4..0B", [S, M, R])),
-    true = ets:insert(Table, {Id, Data}),
-    {ok, Id}.
-create(Table, Id, Data) when is_map(Data) ->
+    create(Table, Id, Data).
+create(Table, Id, Data1) when is_map(Data1) ->
     init(Table),
+    Time = pp_utils:get_current_iso_time(),
+    Data = Data1#{<<"_created_at">> => Time, <<"_lastmodified_at">> => Time},
     true = ets:insert(Table, {Id, Data}),
     ok.
 
 %% 查看
+%% 直接返回所查到的maps类型，方便函数级联操作
+%% 例如下面的代码:
+%%     pp:form(?Model, show, pp:get(?Model, Id)),
+%% 因为Id已经在参数中了，所以无需在输出结果中插入<<"_id">>
 get(Table, Id) ->
     case ets:lookup(Table, Id) of
-        [] -> notfound;
-        [{_K, V}|_T] -> {ok, V}
+        [] -> #{<<"_error">> => <<"notfound">>};
+        [{_K, V}|_T] -> V
     end.
 
 %% 更新数据，返回ok | notfound
-update(Table, Id, Data) when is_map(Data) ->
+update(Table, Id, Data1) when is_map(Data1) ->
+    Time = pp_utils:get_current_iso_time(),
+    Data = Data1#{<<"_lastmodified_at">> => Time},
     true = ets:insert(Table, {Id, Data}),
     ok.
 %% 部分更新
@@ -60,13 +68,16 @@ search(Table, Fun, _Options) ->
     init(Table),
     search_acc(Table, ets:first(Table), Fun, []).
 
+%% 在查询结果中插入<<"_id">>，实际上数据库并不保存这个字段
+%% 但其他两个系统字段<<"_lastmodified_at">>和<<"_created_at">>是要保存的
 search_acc(_Table, '$end_of_table', _Fun, Acc) ->
     Acc;
 search_acc(Table, K, Fun, Acc) ->
     case Fun(K) of
         true ->
-            [{_, Obj}|_T] = ets:lookup(Table, K),
-            search_acc(Table, ets:next(Table, K), Fun, [{K, Obj}|Acc]);
+            [{_, Obj1}|_T] = ets:lookup(Table, K),
+            Obj = maps:put(<<"_id">>, K, Obj1),
+            search_acc(Table, ets:next(Table, K), Fun, [Obj|Acc]);
         false ->
             search_acc(Table, ets:next(Table, K), Fun, Acc)
     end.
