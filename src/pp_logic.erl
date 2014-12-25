@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, load/1, assert/1, is_true/1, query/1, prove/1, stop/0]).
+-export([start_link/0, load/1, assert/1, is_true/1, next/0, prove/1, stop/0]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -35,9 +35,9 @@ start_link() ->
 
 load(File)      -> gen_server:call(?SERVER, {load, File}).
 assert(Assert)  -> gen_server:call(?SERVER, {assert, Assert}).
-is_true(Assert) -> gen_server:call(?SERVER, {is_true, Assert}).
-query(Assert)   -> gen_server:call(?SERVER, {query, Assert}).
 prove(Assert)   -> gen_server:call(?SERVER, {prove, Assert}).
+is_true(Assert) -> gen_server:call(?SERVER, {is_true, Assert}).
+next()          -> gen_server:call(?SERVER, next).
 stop()          -> gen_server:call(?SERVER, stop).
 
 %%%===================================================================
@@ -79,8 +79,13 @@ handle_call({load, File}, _From, OldState) ->
         _ -> {reply, Code, OldState}
     end;
 handle_call({assert, Assert}, _From, OldState) ->
-    {Code, NewState} = erlog:prove({assert, Assert}, OldState),
-    {reply, Code, NewState};
+    %% 避免事实重复
+    case erlog:prove(Assert, OldState) of
+        {{succeed, _}, _} -> {reply, already_exist, OldState};
+        _ ->
+            {Code, NewState} = erlog:prove({assert, Assert}, OldState),
+            {reply, Code, NewState}
+    end;
 handle_call({is_true, Assert}, _From, OldState) ->
     {{Code, _Result}, _NewState} = erlog:prove(Assert, OldState),
     case Code of
@@ -88,17 +93,11 @@ handle_call({is_true, Assert}, _From, OldState) ->
         _ -> {reply, false, OldState}
     end;
 handle_call({prove, Assert}, _From, OldState) ->
-    {Code, NewState} = erlog:prove(Assert, OldState),
-    case Code of
-        succeed -> {reply, Code, NewState};
-        _ -> {reply, Code, OldState}
-    end;
-handle_call({query, Assert}, _From, OldState) ->
-    {{Code, Result}, NewState} = erlog:prove(Assert, OldState),
-    case Code of
-        succeed -> {reply, Result, NewState};
-        _ -> {reply, Code, OldState}
-    end;
+    {Result, NewState} = erlog:prove(Assert, OldState),
+    {reply, Result, NewState};
+handle_call(next, _From, OldState) ->
+    {Result, NewState} = erlog:next_solution(OldState),
+    {reply, Result, NewState};
 handle_call(stop, _From, State) ->
     {stop, normal, State}.
 
