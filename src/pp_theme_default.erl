@@ -51,7 +51,9 @@ edit_control(?F4(textarea)) -> [#label{text=L, for=Id}, #textarea{html_id=Id, id
 edit_control(?F4(textbox))  -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=V}];
 edit_control(?F4(password)) -> [#label{text=L, for=Id}, #password{html_id=Id, id=Id, text=V}];
 edit_control(?F4(tags))     -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=ss_to_tags(V)}];
-edit_control(?F4(time))     -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=V}];
+edit_control(?F4(time))     -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=iso_to_localtime(V)}];
+edit_control(?F4(date))     -> [#label{text=L, for=Id}, #datepicker_textbox{
+    html_id=Id, id=Id, text=V, options=[{dateFormat, "yy-mm-dd"},{showButtonPanel, true}]}];
 edit_control(?F4(checkbox)) -> [#checkbox{html_id=Id, id=Id, text=L, checked=(V=:=true)}].
 
 ss_to_tags(<<"">>) -> <<"">>;
@@ -65,4 +67,5 @@ tags_to_ss(Value) -> re:split(pp_utils:to_binary(Value), ",|;|-|\s").
 
 checkbox_to_s(Value) -> case Value of true -> <<"是"/utf8>>; _ -> <<"否"/utf8>> end.
 
+iso_to_localtime(<<>>) -> <<"未填写"/utf8>>;
 iso_to_localtime(Value) -> pp_utils:iso_to_human_datetime(Value).
