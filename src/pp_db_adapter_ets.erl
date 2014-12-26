@@ -46,8 +46,9 @@ get(Table, Id) ->
 
 %% 更新数据，返回ok | notfound
 update(Table, Id, Data1) when is_map(Data1) ->
+    OldData = get(Table, Id),
     Time = pp_utils:get_current_iso_time(),
-    Data = Data1#{<<"_lastmodified_at">> => Time},
+    Data = maps:merge(OldData, Data1#{<<"_lastmodified_at">> => Time}),
     true = ets:insert(Table, {Id, Data}),
     ok.
 %% 部分更新
