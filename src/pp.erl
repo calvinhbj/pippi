@@ -81,7 +81,7 @@ model_patch(Form2, {Model, Form1, FieldsDesc}) ->
     Fields1 = lists:map(fun({Name, Option}) ->
         { pp_utils:to_binary(Name), init_field(Name, Option) }
     end, FieldsDesc),
-    Fields = maps:merge(maps:from_list(Fields1), model(Model, Form1)),
+    Fields = maps:merge(model(Model, Form1), maps:from_list(Fields1)),
     true = ets:insert(pp_model, {{Model, Form2}, Fields}),
     ok.
 %% 裁剪方式克隆表单模型, 从Form1裁剪生成Form2
@@ -91,15 +91,15 @@ model_cut(Form2, {Model, Form1, FieldsList}) ->
         case FieldsList of
             [] -> true;
             _ ->
-                lists:any(fun(Item) ->
+                not(lists:any(fun(Item) ->
                     %% 同时支持字段名列表和字段描述元组的列表
                     %% 避免参数混淆
                     if
                         is_tuple(Item) -> {Name2, _} = Item;
                         true -> Name2 = Item
                     end,
-                    Name1 =/= pp_utils:to_binary(Name2)
-                end, FieldsList)
+                    Name1 =:= pp_utils:to_binary(Name2)
+                end, FieldsList))
         end
     end, Fields1),
     true = ets:insert(pp_model, {{Model, Form2}, maps:from_list(Fields)}),
