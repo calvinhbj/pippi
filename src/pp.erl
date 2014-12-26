@@ -132,9 +132,9 @@ model_filter(Form2, {Model, Form1, FieldsList}) ->
 
 init_field(Name, Option) ->
     FieldType = proplists:get_value(type, Option, textbox),
-    Label1 = proplists:get_value(label, Option, Name),
+    Label = proplists:get_value(label, Option, Name),
     %% 约定: 字段描述命名自身不可包含下划线
-    [Label|_] = string:tokens(Label1, "_"),
+    %[Label|_] = string:tokens(Label1, "_"),
     %% 临时序号
     {_, T2, T3} = now(),
     #{
