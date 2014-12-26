@@ -78,10 +78,15 @@ model_set({Model, Form, FieldsDesc}) ->
 model_clone(Form2, {Model, Form1}) ->
     model_cut(Form2, {Model, Form1, []}).
 model_patch(Form2, {Model, Form1, FieldsDesc}) ->
+    OldModel = model(Model, Form1),
     Fields1 = lists:map(fun({Name, Option}) ->
-        { pp_utils:to_binary(Name), init_field(Name, Option) }
+        Key = pp_utils:to_binary(Name),
+        NewField1 = init_field(Name, Option),
+        OldField = maps:get(Key, OldModel, NewField1),
+        NewField = NewField1#{seq => maps:get(seq, OldField)},
+        { Key, NewField }
     end, FieldsDesc),
-    Fields = maps:merge(model(Model, Form1), maps:from_list(Fields1)),
+    Fields = maps:merge(OldModel, maps:from_list(Fields1)),
     true = ets:insert(pp_model, {{Model, Form2}, Fields}),
     ok.
 %% 裁剪方式克隆表单模型, 从Form1裁剪生成Form2
