@@ -3,13 +3,13 @@
 %%% @author homeway <homeway.xue@gmail.com>
 %%% @copyright (C) 2014, homeway
 %%% @doc
-%%% a magic riak theme for zerb froundation5 on nitrogen
+%%% a pippi theme for nitrogen
 %%% @end
-%%% Created : 14 Dec 2014 by homeway <homeway.xue@gmail.com>
+%%% Created : 26 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp_theme_default).
 -include_lib("nitrogen_core/include/wf.hrl").
--export([form/2, query/1, label_control/1, edit_control/1, show_control/1]).
+-export([form/2, query/1, edit_control/1, show_control/1]).
 
 %% {Key, Option#{}}
 form(new, Fields) -> form(edit, Fields);
@@ -22,7 +22,6 @@ form(show, Fields) ->
         #panel{body=M:F(Field)}
     end, Fields);
 form(_, _) -> [].
-
 
 %% 若表单中的字段重叠，则使用最后的值作为查询结果
 query(Fields) ->
@@ -39,20 +38,21 @@ query(Fields) ->
     end, Fields),
     maps:from_list(List).
 
-label_control({h5, #{label:=Label}}) -> #h5{text=Label};
-label_control(#{label:=Label, seq:=Id}) -> #label{text=Label, for=Id}.
+-define(F2,       #{label:=L, value:=V}).
+-define(F3(Type), #{label:=L, value:=V, field_type:=Type}).
+-define(F4(Type), #{label:=L, value:=V, field_type:=Type, seq:=Id}).
 
-edit_control(#{field_type:=textarea, seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #textarea{html_id=Id, id=Id, text=Value}];
-edit_control(#{field_type:=textbox,  seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #textbox{html_id=Id, id=Id, text=Value}];
-edit_control(#{field_type:=password, seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #password{html_id=Id, id=Id, text=Value}];
-edit_control(#{field_type:=tags,     seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #textbox{html_id=Id, id=Id, text=ss_to_tags(Value)}];
-edit_control(#{field_type:=checkbox, seq:=Id, label:=Label, value:=Value}) -> #checkbox{html_id=Id, id=Id, text=Label, checked=(Value=:=true)};
-edit_control(#{field_type:=time,     seq:=Id, label:=Label, value:=Value}) -> [#label{text=Label, for=Id}, #textbox{html_id=Id, id=Id, text=Value}].
+show_control(?F3(tags))     -> [#h5{text=L}, ss_to_tags(V), #hr{}];
+show_control(?F3(checkbox)) -> [#h5{text=L}, checkbox_to_s(V), #hr{}];
+show_control(?F3(time))     -> [#h5{text=L}, iso_to_localtime(V), #hr{}];
+show_control(?F2)           -> [#h5{text=L}, V, #hr{}].
 
-show_control(#{field_type:=tags,     label:=Label, value:=Value}) -> [#h5{text=Label}, ss_to_tags(Value), #hr{}];
-show_control(#{field_type:=checkbox, label:=Label, value:=Value}) -> [#h5{text=Label}, checkbox_to_s(Value), #hr{}];
-show_control(#{field_type:=time,     label:=Label, value:=Value}) -> [#h5{text=Label}, iso_to_localtime(Value), #hr{}];
-show_control(#{label:=Label, value:=Value}) -> [#h5{text=Label}, Value, #hr{}].
+edit_control(?F4(textarea)) -> [#label{text=L, for=Id}, #textarea{html_id=Id, id=Id, text=V}];
+edit_control(?F4(textbox))  -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=V}];
+edit_control(?F4(password)) -> [#label{text=L, for=Id}, #password{html_id=Id, id=Id, text=V}];
+edit_control(?F4(tags))     -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=ss_to_tags(V)}];
+edit_control(?F4(time))     -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=Id, text=V}];
+edit_control(?F4(checkbox)) -> [#checkbox{html_id=Id, id=Id, text=L, checked=(V=:=true)}].
 
 ss_to_tags(<<"">>) -> <<"">>;
 ss_to_tags(Value1) ->

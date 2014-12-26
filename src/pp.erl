@@ -77,6 +77,13 @@ model_set({Model, Form, FieldsDesc}) ->
 %% 补充方式克隆表单模型, 从Form1补充生成Form2
 model_clone(Form2, {Model, Form1}) ->
     model_cut(Form2, {Model, Form1, []}).
+%% patch时:
+%%   若字段已经存在，应保持原有的字段定义顺序
+%%   否则则追加到字段列表末尾
+%% 这个机制会带来一些好处，但同时也带来了复杂情况
+%% 同一页面内包含多个表单时，开发者使用patch时尤其应避免生成重复seq的表单
+%% 注意:
+%%   同一页面内包含的表单有seq重复时，会导致html_id和wfid相同，引发nitrogen逻辑错误
 model_patch(Form2, {Model, Form1, FieldsDesc}) ->
     OldModel = model(Model, Form1),
     Fields1 = lists:map(fun({Name, Option}) ->
