@@ -27,7 +27,7 @@
 -export([init/1, create/2, create/3, update/3, patch/3, get/2, delete/2, search/3]).
 -export([all/1]).
 
--export([jsonp/1, get_current_iso_time/0, to_binary/1, q/2, q/3]).
+-export([jsonp/1, to_binary/1, q/2, q/3]).
 -export([url/1, url/2, url/3, url/4]).
 
 %% 模型将被存储在ets:pp_model中
@@ -221,7 +221,6 @@ all   (Model)               -> apply(backend(Model), all,    [Model]).
 %% utils methods
 to_binary(Term)        -> pp_utils:to_binary(Term).
 jsonp(Json)            -> pp_utils:jsonp(Json).
-get_current_iso_time() -> pp_utils:get_current_iso_time().
 q(Key, Map)            -> pp_utils:q(Key, Map).
 q(Key, Map, Default)   -> pp_utils:q(Key, Map, Default).
 url(T1)                -> pp_utils:url(T1).

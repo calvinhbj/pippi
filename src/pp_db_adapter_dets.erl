@@ -27,7 +27,7 @@ create(Table, Data) when is_map(Data) ->
     create(Table, Id, Data).
 create(Table, Id, Data1) when is_map(Data1) ->
     init(Table),
-    Time = pp_utils:get_current_iso_time(),
+    Time = pp_utils:now_to_iso(),
     Data = Data1#{<<"_created_at">> => Time, <<"_lastmodified_at">> => Time},
     dets:insert(Table, {Id, Data}),
     close(Table).
@@ -50,7 +50,7 @@ get(Table, Id) ->
 update(Table, Id, Data1) when is_map(Data1) ->
     init(Table),
     OldData = get(Table, Id),
-    Time = pp_utils:get_current_iso_time(),
+    Time = pp_utils:now_to_iso(),
     Data = maps:merge(OldData, Data1#{<<"_lastmodified_at">> => Time}),
     dets:insert(Table, {Id, Data}),
     close(Table).
