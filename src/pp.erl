@@ -145,17 +145,30 @@ init_field(Name, Option) ->
         seq => pp_utils:to_binary(T2*1000000 + T3),
         show_control => proplists:get_value(show_control, Option, [pp_theme_default, show_control]),
         edit_control => proplists:get_value(edit_control, Option, [pp_theme_default, edit_control]),
+        cell_control => proplists:get_value(cell_control, Option, [pp_theme_default, cell_control]),
         value => <<"">>
     }.
 
 %% FormName用来指定要选择的渲染表单
 %% 默认theme提供了new,edit,show,index等实用的表单
 form({Model, Form}) -> form(Model, Form);
-form({Model, Form, Fields}) -> form(Model, Form, Fields).
+form({Model, Form, Data}) -> form(Model, Form, Data).
+
 form(Model, Form) ->
     apply(theme(Model), form, [Form, fields(Model, Form)]).
-form(Model, Form, Data) ->
-    apply(theme(Model), form, [Form, fields(Model, Form, Data)]).
+
+%% 控制可用的表单类型，这有助于减少代码误写产生的不可预期后果
+form(Model, index, Data) -> form(Model, index, multi, Data);
+form(Model, show, Data)  -> form(Model, show, single, Data);
+form(Model, new, Data)   -> form(Model, new,  single, Data);
+form(Model, edit, Data)  -> form(Model, edit, single, Data);
+form(_Model, _Form, _Data)  -> [].
+
+%% pp_theme模块应实现单个数据表单渲染和多条数据表单渲染两种机制
+form(Model, Form, single, Data) ->
+    apply(theme(Model), form, [Form, fields(Model, Form, Data)]);
+form(Model, Form, multi, Data) ->
+    apply(theme(Model), form, [Form, #{model=>Model, fields=>fields(Model, Form), data=>Data}]).
 
 %% 提取需要渲染的表单字段
 %% 以按照定义时排序的列表返回(该顺序在存储为maps已经打乱)
