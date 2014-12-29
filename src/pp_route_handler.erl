@@ -5,24 +5,14 @@
 
 -module (pp_route_handler).
 -behaviour (route_handler).
--include("wf.hrl").
+-include_lib("nitrogen_core/include/wf.hrl").
 -export ([
-    init/2, 
+    init/2,
     finish/2
 ]).
 
 %% @doc
-%% dynamic_route_handler looks at the requested path and file extension
-%% to determine how a request should be served. If the request path has no 
-%% extension, then it assumes this request should be handled by a Nitrogen
-%% page module that matches the path with slashes converted to underscores.
-%% If no module is found, then it will chop off the last part of the path 
-%% (storing it for later access in wf:path_info/0) and try again, repeating
-%% until either a module is found, or there are no more parts to chop. If
-%% a module still can't be found, then the web_404 module is used if defined
-%% by the user, otherwise a 404 is generated internally.
-%% 
-%% Requests for "/" are automatically sent to index.
+%% clone from dynamic_route_handler in nitrgen to support replacable route
 %%
 %% If the request path does have an extension, then it is treated like a request
 %% for a static file. This is delegated back to the HTTP server.
@@ -55,12 +45,28 @@ finish(_Config, State) ->
 % Otherwise, try to load a module according to each part of the path.
 % First, cycle through code:all_loaded(). If not there, then check erl_prim_loader:get_file()
 % If still not there, then 404.
-route("/") -> 
+route("/") ->
     {list_to_atom(module_name(["index"])), main, []};
-
+%% 如果定义了route/1, 且返回不是<<>>就使用定制的路由
+%% 例如:
+%%   route("/about") -> myabout;
+%%   route(_Route) -> <<>>.
+%% 如果用户未定义route/1，则看pp_route/route1是否能处理
+%% 都没有处理则继续使用nitrogen动态路由处理
 route(Path) ->
-    InitialEntryPoint = determine_initial_entry_point(Path),
-    handle_initial_entry_point(Path, InitialEntryPoint).
+    case erlang:function_exported(nitrogen_main_handler, route, 1) of
+        true ->  Handler1 = nitrogen_main_handler:route(Path);
+        false -> Handler1 = <<>>
+    end,
+    case Handler1 of
+        <<>> ->  Handler2 = pp_route:route(Path);
+        _ ->     Handler2 = Handler1
+    end,
+    case Handler2 of
+        <<>> ->  handle_initial_entry_point(Path, determine_initial_entry_point(Path));
+        _ ->     {Handler2, main, []}
+    end.
+
 
 handle_initial_entry_point(Path, static) ->
     {static_file, main, Path};
