@@ -9,52 +9,28 @@
 %%%-------------------------------------------------------------------
 -module(pp_theme_default).
 -include_lib("nitrogen_core/include/wf.hrl").
--export([form/2, query/1, edit_control/1, show_control/1, cell_control/1]).
+-export([new/1, edit/1, show/1, query/1]).
+-export([edit_control/1, show_control/1, cell_control/1]).
 
 %% {Key, Option#{}}
-form(new, Fields) -> form(edit, Fields);
-form(edit, Fields) ->
+new(Model) -> edit(Model).
+
+edit(Model) ->
     #panel{class="ui form", body=[
         lists:map(fun(#{edit_control:=[M, F]}=Field) ->
             #panel{body=M:F(Field)}
-        end, Fields)
-    ]};
-form(show, Fields) ->
+        end, Model)
+    ]}.
+
+show(Model) ->
     #panel{class="ui form", body=[
         lists:map(fun(#{show_control:=[M, F]}=Field) ->
             #panel{body=M:F(Field)}
-        end, Fields)
-    ]};
-form(index, #{model:=Model, fields:=Fields, data:=Data}) ->
-    [
-        "<table class='ui table segment'>",
-        "<thead>",
-        #tablerow{cells=[
-            lists:map(fun(#{label:=Label}) ->
-                #tableheader{text=Label}
-            end, Fields),
-            #tableheader{text="操作"}
-        ]},
-        "</thead>",
-        "<tbody>",
-        lists:map(fun(Item) ->
-            #tablerow{cells=[
-                lists:map(fun(#{key:=Key, cell_control:=[M, F]}=Field1) ->
-                    Field = Field1#{value=>maps:get(Key, Item, <<>>)},
-                    #tablecell{body=M:F(Field)}
-                end, Fields),
-                #tablecell{body=[
-                    #link{ body="查看", url=pp:url(Model, show, maps:get(<<"_id">>, Item)) }
-                ]}
-            ]}
-        end, Data),
-        "</tbody>",
-        "</table>"
-    ];
-form(_, _) -> [].
+        end, Model)
+    ]}.
 
 %% 若表单中的字段重叠，则使用最后的值作为查询结果
-query(Fields) ->
+query(Model) ->
     List = lists:map(fun(#{key := Key, seq := Id, field_type := Type}) ->
         case Type of
             tags ->
@@ -69,7 +45,7 @@ query(Fields) ->
             _ ->
                 {Key, pp_utils:to_binary(lists:last(wf:qs(Id)))}
         end
-    end, Fields),
+    end, Model),
     maps:from_list(List).
 
 -define(F2(Type), #{value:=V, field_type:=Type}).
