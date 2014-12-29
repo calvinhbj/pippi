@@ -70,13 +70,11 @@ model(Fields, Data) ->
 init_field(Key, Option) ->
     FieldType = maps:get(type, Option, textbox),
     Label = maps:get(label, Option, Key),
-    {_, T2, T3} = now(),
-    Ts = pp_utils:to_binary(T2*1000000 + T3),
     FM = #{
         field_type => FieldType,
         key => Key,
         label => Label,
-        id => pp_utils:to_binary(maps:get(id, Option, Ts)),
+        id => pp_utils:to_binary(maps:get(id, Option, io_lib:format("ppid_~ts", [base64:encode(Key)]))),
         show_control => maps:get(show_control, Option, [pp_theme_default, show_control]),
         edit_control => maps:get(edit_control, Option, [pp_theme_default, edit_control]),
         cell_control => maps:get(cell_control, Option, [pp_theme_default, cell_control])
