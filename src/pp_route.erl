@@ -14,5 +14,9 @@
 -module(pp_route).
 -export([route/1]).
 
-route(_Path) ->
-    <<>>.
+route(Path) ->
+    r(pp:to_binary(Path)).
+
+r(<<"/user/index">>) -> pippi_user_index;
+r(<<"/user/show/", Id/binary>>) -> {pippi_user_show, Id};
+r(_Path) -> <<>>.
