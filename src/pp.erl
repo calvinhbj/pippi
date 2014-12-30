@@ -24,19 +24,22 @@ query(Model, Module) -> pp_form:query(Model, Module).
 html_id(Model, Name) -> pp_form:html_id(Model, Name).
 wfid(Model, Name) -> pp_form:wfid(Model, Name).
 
-%% db ------------------------------------------------------
+%% @doc db ------------------------------------------------------
+%% 自动将所查询的键值转为二进制类型
+%% 如果没有指定数据存储端，则使用pp_db_adapter_dets
+%% @end
+%% @todo 将来改成读取配置文件来决定backend
 -define(default_backend, pp_db_adapter_dets).
 -define(db, (maps:get(backend, O, ?default_backend))).
-%% 自动将所查询的键值转为二进制类型
-init  (#{model:=Model} = O)               -> apply(?db, init,   [Model]).
-create(#{model:=Model} = O, Data)         -> apply(?db, create, [Model, Data]).
-create(#{model:=Model} = O, Id, Data)     -> apply(?db, create, [Model, to_binary(Id), Data]).
-get   (#{model:=Model} = O, Id)           -> apply(?db, get,    [Model, to_binary(Id)]).
-update(#{model:=Model} = O, Id, Data)     -> apply(?db, update, [Model, to_binary(Id), Data]).
-patch (#{model:=Model} = O, Id, Data)     -> apply(?db, patch,  [Model, to_binary(Id), Data]).
-delete(#{model:=Model} = O, Id)           -> apply(?db, delete, [Model, to_binary(Id)]).
-search(#{model:=Model} = O, Fun, Options) -> apply(?db, search, [Model, Fun, Options]).
-all   (#{model:=Model} = O)               -> apply(?db, all,    [Model]).
+init  (#{bucket:=B} = O)               -> apply(?db, init,   [B]).
+create(#{bucket:=B} = O, Data)         -> apply(?db, create, [B, Data]).
+create(#{bucket:=B} = O, Id, Data)     -> apply(?db, create, [B, to_binary(Id), Data]).
+get   (#{bucket:=B} = O, Id)           -> apply(?db, get,    [B, to_binary(Id)]).
+update(#{bucket:=B} = O, Id, Data)     -> apply(?db, update, [B, to_binary(Id), Data]).
+patch (#{bucket:=B} = O, Id, Data)     -> apply(?db, patch,  [B, to_binary(Id), Data]).
+delete(#{bucket:=B} = O, Id)           -> apply(?db, delete, [B, to_binary(Id)]).
+search(#{bucket:=B} = O, Fun, Options) -> apply(?db, search, [B, Fun, Options]).
+all   (#{bucket:=B} = O)               -> apply(?db, all,    [B]).
 
 %% utils ----------------------------------------------------
 %% utils methods

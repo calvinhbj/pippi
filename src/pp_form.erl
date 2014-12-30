@@ -58,20 +58,17 @@ data_table(Model, RowsData) ->
         #tablerow{cells=[
             lists:map(fun(#{label:=Label}) ->
                 #tableheader{text=Label}
-            end, Model),
-            #tableheader{text="操作"}
+            end, Model)
         ]},
         "</thead>"
         "<tbody>",
         lists:map(fun(Item) ->
             #tablerow{cells=[
-                lists:map(fun(#{key:=Key, cell_control:=Func}=Field1) ->
+                lists:map(fun(#{key:=Key}=Field1) ->
                     Field = Field1#{value=>maps:get(Key, Item, <<>>)},
-                    #tablecell{body=?default_theme_module:control_fun(Func, Field)}
-                end, Model),
-                #tablecell{body=[
-                    #link{ body="查看", url=pp:url(Model, show, maps:get(<<"_id">>, Item)) }
-                ]}
+                    Func = maps:get(cell_control, Field, fun ?default_theme_module:cell_control/1),
+                    #tablecell{body=Func(Field)}
+                end, Model)
             ]}
         end, RowsData),
         "</tbody>",
