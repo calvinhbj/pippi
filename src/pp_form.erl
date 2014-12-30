@@ -22,10 +22,14 @@
 %% 可接受{M, F}或Func的方式使用
 form(Model, {Module, FormName}) ->
     case erlang:function_exported(Module, FormName, 1) of
-        true -> apply(Model, FormName, [Model]);
-        false -> []
+        true -> apply(Module, FormName, [Model]);
+        false ->
+            io:format("missing module or formname when render form: [~s, ~s]~n",
+                [pp:to_binary(Module), pp:to_binary(FormName)]),
+            []
     end;
 form(Model, FormName) when is_atom(FormName) -> form(Model, {?default_theme_module, FormName});
+form(Model, [Module, FormName]) -> form(Model, {Module, FormName});
 form(Model, Func) when is_function(Func) -> Func(Model);
 form(_, _) -> [].
 
@@ -72,8 +76,8 @@ data_table(Model, RowsData) ->
 %% 查询经过动态渲染的表单中的值
 query(Model) -> query(Model, ?default_theme_module).
 query(Model, Module) when is_atom(Module) ->
-    case erlang:function_exported(Module, query) of
-        true -> apply(Model, query, [Model]);
+    case erlang:function_exported(Module, query, 1) of
+        true -> apply(Module, query, [Model]);
         false -> #{}
     end;
 query(_, _) -> #{}.

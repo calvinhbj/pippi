@@ -52,18 +52,25 @@ lists(_, _) -> [].
 %% model/1可以传递默认值, 方法是在属性列表中设置[{value, "Value"}]
 model(Fields) ->
     lists:map(fun({Key, OptionL}) ->
-        init_field(Key, maps:from_list(OptionL))
+        OptionM1 = maps:from_list(OptionL),
+        OptionM2 = OptionM1#{value => maps:get(value, OptionM1, <<>>)},
+        init_field(Key, OptionM2)
     end, confirm(Fields)).
 
 %% model/2可以将maps类型的数据传递给model, 如果数据是从数据库取得的则非常方便
-model(Fields, Data) ->
+model(Fields, Data) when is_map(Data) ->
+    %% 确保所传入map数据的键是二进制
     L1 = lists:map(fun({K1, V1}) ->
         {pp_utils:to_binary(K1), V1}
     end, maps:to_list(Data)),
     Data1 = maps:from_list(L1),
     lists:map(fun({Key, OptionL}) ->
-        OptionM = maps:from_list(OptionL),
-        init_field(Key, OptionM#{value => maps:get(Key, Data1, <<>>)})
+        OptionM1 = maps:from_list(OptionL),
+        %% 如果没有设置默认值，则赋值为<<>>
+        OptionM2 = OptionM1#{value => maps:get(value, OptionM1, <<>>)},
+        %% 如果输入数据存在该字段，则使用输入map中的value
+        OptionM3 = OptionM2#{value => maps:get(Key, Data1, maps:get(value, OptionM2))},
+        init_field(Key, OptionM3)
     end, confirm(Fields)).
 
 %% 支持透传没有默认覆盖的属性

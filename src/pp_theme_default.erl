@@ -31,7 +31,7 @@ show(Model) ->
 
 %% 若表单中的字段重叠，则使用最后的值作为查询结果
 query(Model) ->
-    List = lists:map(fun(#{key := Key, seq := Id, field_type := Type}) ->
+    List = lists:map(fun(#{key := Key, id := Id, field_type := Type}) ->
         case Type of
             tags ->
                 L1 = tags_to_ss(lists:last(wf:qs(Id))),
@@ -39,9 +39,9 @@ query(Model) ->
             checkbox ->
                 {Key, "on" =:= lists:last(wf:qs(Id))};
             date ->
-                {Key, pp_utils:human_to_iso(wf:q(Id))};
+                {Key, pp_utils:human_to_iso(lists:last(wf:qs(Id)))};
             datetime ->
-                {Key, pp_utils:human_to_iso(wf:q(Id))};
+                {Key, pp_utils:human_to_iso(lists:last(wf:q(Id)))};
             _ ->
                 {Key, pp_utils:to_binary(lists:last(wf:qs(Id)))}
         end
@@ -49,7 +49,7 @@ query(Model) ->
     maps:from_list(List).
 
 -define(F2(Type), #{value:=V, field_type:=Type}).
--define(F4(Type), #{label:=L, value:=V, field_type:=Type, seq:=Id}).
+-define(F4(Type), #{label:=L, value:=V, field_type:=Type, id:=Id}).
 
 cell_control(?F2(tags))     -> [ss_to_tags(V)];
 cell_control(?F2(checkbox)) -> [checkbox_to_s(V)];
@@ -69,7 +69,7 @@ edit_control(?F4(datetime)) -> [#label{text=L, for=Id}, #textbox{html_id=Id, id=
 edit_control(?F4(date))     -> [#label{text=L, for=Id}, #datepicker_textbox{
     html_id=Id, id=Id, text=iso_to_human(date, V), options=[{dateFormat, "yy-mm-dd"},{showButtonPanel, true}]}];
 edit_control(?F4(link))     -> [#label{text=L, for=Id}, edit_link(Id, V)];
-edit_control(Other)         -> edit_control(Other#{field_type=>textbox}).
+edit_control(_Other)        -> [].
 
 ss_to_tags(<<"">>) -> <<"">>;
 ss_to_tags(Value1) ->
