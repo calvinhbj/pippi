@@ -34,7 +34,8 @@ form(Model, [Module, FormName]) -> form(Model, {Module, FormName});
 form(Model, Func) when is_function(Func) -> Func(Model);
 form(_, _) -> [].
 
-%% @doc form/3可渲染多行数据
+%% @doc 渲染多行数据
+%%
 %% 多行渲染的用例包括数据表、列表展示等
 %% @end
 data_list(Model, FormName, RowsData) ->

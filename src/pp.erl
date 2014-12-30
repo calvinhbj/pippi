@@ -3,6 +3,7 @@
 %%% @author homeway <homeway.xue@gmail.com>
 %%% @copyright (C) 2014, homeway
 %%% @doc
+%%% pippi框架入口模块
 %%% @end
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------

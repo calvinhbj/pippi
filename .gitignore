@@ -2,3 +2,5 @@
 .#*
 .rebar/erlcinfo
 ebin/
+.eunit/
+doc/
