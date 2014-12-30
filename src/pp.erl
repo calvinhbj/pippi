@@ -7,7 +7,6 @@
 %%% Created : 22 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp).
--include_lib("nitrogen_core/include/wf.hrl").
 -compile(export_all).
 
 %% model ---------------------------------------------------

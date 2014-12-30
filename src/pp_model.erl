@@ -12,30 +12,31 @@
 %%% Created : 29 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
 -module(pp_model).
-
 -export([lists/2, model/1, model/2, confirm/1]).
+-include_lib("eunit/include/eunit.hrl").
 
-%% 从L1中选择L2中也包含的元素
+%% @doc 从L1中选择L2中也包含的元素
 %% 下面两种方式都能工作
 %%   lists([{"name", []}, {"email", []}], {filter, ["name"]})
 %%   lists([{"name", []}, {"email", []}], {filter, [{"name", []}]})
+%% @end
 lists(L1, {filter, L2}) ->
     lists:filter(fun({Name1, _}) ->
         lists:any(fun({Name2, _}) ->
             Name1 =:= Name2
         end, confirm(L2))
     end, confirm(L1));
-%% 从L1中裁剪掉L2中包含的元素
+%% @doc 从L1中裁剪掉L2中包含的元素 @end
 lists(L1, {drop, L2}) ->
     lists:filter(fun({Name1, _}) ->
         not(lists:any(fun({Name2, _}) ->
             Name1 =:= Name2
         end, confirm(L2)))
     end, confirm(L1));
-%% 将L2中的元素补充到L1中
+%% @doc 将L2中的元素补充到L1中 @end
 lists(L1, {merge, L2}) ->
     confirm(L1) ++ confirm(L2);
-%% 从L1剔除L2中包含的元素
+%% @doc 从L1替换L2中包含的元素 @end
 lists(L1, {replace, []}) -> L1;
 lists(L1, {replace, L2}) ->
     [{K2, Option2}|Rest] = confirm(L2),
@@ -48,8 +49,10 @@ lists(L1, {replace, L2}) ->
     lists(NewL, {replace, Rest});
 lists(_, _) -> [].
 
-
+%% @doc
 %% model/1可以传递默认值, 方法是在属性列表中设置[{value, "Value"}]
+%% @end
+%% @spec model(proplists()) -> maplists()
 model(Fields) ->
     lists:map(fun({Key, OptionL}) ->
         OptionM1 = maps:from_list(OptionL),
@@ -81,18 +84,17 @@ init_field(Key, Option) ->
         field_type => FieldType,
         key => Key,
         label => Label,
-        id => pp_utils:to_binary(maps:get(id, Option, io_lib:format("ppid_~ts", [base64:encode(Key)]))),
-        show_control => maps:get(show_control, Option, [pp_theme_default, show_control]),
-        edit_control => maps:get(edit_control, Option, [pp_theme_default, edit_control]),
-        cell_control => maps:get(cell_control, Option, [pp_theme_default, cell_control])
+        id => pp_utils:to_binary(maps:get(id, Option,
+            io_lib:format("ppid_~ts", [base64:encode(Key)])))
     },
     maps:merge(Option, FM).
 
-%% 这个函数非常有用, 允许了灵活的模型定义
+%% @doc 这个函数非常有用, 允许了灵活的模型定义
 %% 下面几种都是合法的:
 %%  ["name", "email"]
 %%  [{"name", []}, {"email", []}]
 %%  ["name", {"email", []}]
+%% @end
 confirm(L) ->
     lists:map(fun(I) ->
         case I of
@@ -101,3 +103,58 @@ confirm(L) ->
         end
     end, L).
 
+%% tests -----------------------------------------
+lists_test() ->
+    L1 = ["姓名", "年龄"],
+
+    %% confirm转换为统一格式
+    ?assertEqual(
+        confirm(L1),
+        [{<<"姓名"/utf8>>, []}, {<<"年龄"/utf8>>, []}]),
+
+    %% 列表过滤
+    ?assertEqual(
+        lists(L1, {filter, ["年龄"]}),
+        [{<<"年龄"/utf8>>, []}]),
+
+    %% 列表裁剪
+    ?assertEqual(
+        lists(L1, {drop, ["年龄"]}),
+        [{<<"姓名"/utf8>>, []}]),
+
+    %% 列表替换
+    ?assertEqual(
+        lists(L1, {replace, [
+            {"年龄", [{type, integer}]}
+        ]}),
+        [
+            {<<"姓名"/utf8>>, []},
+            {<<"年龄"/utf8>>, [{type, integer}]}
+        ]
+    ).
+
+model_test() ->
+    Data = [
+        "姓名",
+        {"年龄", [{value, "39"}]},
+        {"邮箱", []},
+        {"朋友", [{type, tags}]}
+    ],
+    NewModel = pp:model(pp:lists(Data, {filter, ["年龄", "姓名"]})),
+    NewResult = [
+        #{
+            field_type => textbox,
+            id => <<"ppid_5aeT5ZCN">>,
+            key => <<"姓名"/utf8>>,
+            label => <<"姓名"/utf8>>,
+            value => <<>>
+        },
+        #{
+            field_type => textbox,
+            id => <<"ppid_5bm06b6E">>,
+            key => <<"年龄"/utf8>>,
+            label => <<"年龄"/utf8>>,
+            value => "39"
+        }
+    ],
+    ?assertEqual(NewModel, NewResult).
