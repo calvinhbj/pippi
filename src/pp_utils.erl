@@ -11,10 +11,9 @@
 %% API
 -export([jsonp/1, jsonp/2]).
 -export([iso_to_human/1, iso_to_human/2, human_to_iso/1, now_to_iso/0, now_to_human/0]).
--export([to_binary/1, to_integer/1, q/2, q/3]).
+-export([to_binary/1, to_integer/1, map_get/2, map_get/3]).
 -export([confirm_sync/2]).
 -export([url/1, url/2, url/3, url/4]).
--export([bucket/1, search_index/1]).
 
 %% 从iso格式<<"2014-01-23T12:23:01Z">>转为{{y,m,d},{h,mi,s}}格式
 iso_to_dt(<< Y:4/binary, "-", M:2/binary, "-", D:2/binary, "T",
@@ -112,13 +111,10 @@ timer(From, Fun, Timeout, Maxtimes) ->
     end.
 
 %% 快速读取包含中文的maps字段
-q(Element, Data) -> maps:get(to_binary(Element), Data).
-q(Element, Data, Default) -> maps:get(to_binary(Element), Data, Default).
+map_get(Element, Data) -> maps:get(to_binary(Element), Data).
+map_get(Element, Data, Default) -> maps:get(to_binary(Element), Data, Default).
 
 url(T1) -> io_lib:format("/~s", [to_binary(T1)]).
 url(T1, T2) -> io_lib:format("/~s/~s", [to_binary(T1), to_binary(T2)]).
 url(T1, T2, T3) -> io_lib:format("/~s/~s/~s", [to_binary(T1), to_binary(T2), to_binary(T3)]).
 url(T1, T2, T3, T4) -> io_lib:format("/~s/~s/~s/~s", [to_binary(T1), to_binary(T2), to_binary(T3), to_binary(T4)]).
-
-bucket(Template) -> proplists:get_value(bucket, Template, <<>>).
-search_index(Template) -> proplists:get_value(search_index, Template, <<>>).

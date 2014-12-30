@@ -42,8 +42,8 @@ all   (#{model:=Model} = O)               -> apply(?db, all,    [Model]).
 %% utils methods
 to_binary(Term)        -> pp_utils:to_binary(Term).
 jsonp(Json)            -> pp_utils:jsonp(Json).
-q(Key, Map)            -> pp_utils:q(Key, Map).
-q(Key, Map, Default)   -> pp_utils:q(Key, Map, Default).
+map_get(Key, Map)            -> pp_utils:map_get(Key, Map).
+map_get(Key, Map, Default)   -> pp_utils:map_get(Key, Map, Default).
 url(T1)                -> pp_utils:url(T1).
 url(T1, T2)            -> pp_utils:url(T1, T2).
 url(T1, T2, T3)        -> pp_utils:url(T1, T2, T3).
