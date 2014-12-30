@@ -47,12 +47,18 @@ finish(_Config, State) ->
 % If still not there, then 404.
 route("/") ->
     {list_to_atom(module_name(["index"])), main, []};
-%% 如果定义了route/1, 且返回不是<<>>就使用定制的路由
+%% @doc 如果定义了route/1, 且返回不是<<>>就使用定制的路由
+%% 返回四种形式都是合理的:
+%%
 %% 例如:
-%%   route("/about") -> myabout;
-%%   route(_Route) -> <<>>.
+%%   route("/about1") -> myabout;
+%%   route("/about2") -> {myabout, second};
+%%   route("/about3") -> {myabout, main, second};
+%%   route(_Route)    -> <<>>.
+%%
 %% 如果用户未定义route/1，则看pp_route/route1是否能处理
 %% 都没有处理则继续使用nitrogen动态路由处理
+%% @end
 route(Path) ->
     case erlang:function_exported(nitrogen_main_handler, route, 1) of
         true ->  Handler1 = nitrogen_main_handler:route(Path);
@@ -64,7 +70,9 @@ route(Path) ->
     end,
     case Handler2 of
         <<>> ->  handle_initial_entry_point(Path, determine_initial_entry_point(Path));
-        _ ->     {Handler2, main, []}
+        {M, F, P} -> {M, F, P};
+        {M, P}    -> {M, main, P};
+        M         -> {M, main, []}
     end.
 
 
