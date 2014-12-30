@@ -2,7 +2,7 @@
 %%% @author homeway <homeway.xue@gmail.com>
 %%% @copyright (C) 2014, homeway
 %%% @doc
-%%%
+%%% 工具函数
 %%% @end
 %%% Created : 13 Dec 2014 by homeway <homeway.xue@gmail.com>
 %%%-------------------------------------------------------------------
@@ -13,7 +13,7 @@
 -export([iso_to_human/1, iso_to_human/2, human_to_iso/1, now_to_iso/0, now_to_human/0]).
 -export([to_binary/1, to_integer/1, map_get/2, map_get/3]).
 -export([confirm_sync/2]).
--export([url/1, url/2, url/3, url/4]).
+-export([url/1, url/2, url/3, url/4, url2/2]).
 
 %% 从iso格式<<"2014-01-23T12:23:01Z">>转为{{y,m,d},{h,mi,s}}格式
 iso_to_dt(<< Y:4/binary, "-", M:2/binary, "-", D:2/binary, "T",
@@ -110,11 +110,35 @@ timer(From, Fun, Timeout, Maxtimes) ->
             end
     end.
 
-%% 快速读取包含中文的maps字段
+%% @doc 快速读取包含中文的maps字段
+%% map_get(abc, #{<<"abc">> => 1})
+%% @end
 map_get(Element, Data) -> maps:get(to_binary(Element), Data).
 map_get(Element, Data, Default) -> maps:get(to_binary(Element), Data, Default).
 
+%% @doc 构建简单的url
+%% url(project, post)
+%%   "/project/post"
+%% @end
 url(T1) -> io_lib:format("/~s", [to_binary(T1)]).
 url(T1, T2) -> io_lib:format("/~s/~s", [to_binary(T1), to_binary(T2)]).
 url(T1, T2, T3) -> io_lib:format("/~s/~s/~s", [to_binary(T1), to_binary(T2), to_binary(T3)]).
 url(T1, T2, T3, T4) -> io_lib:format("/~s/~s/~s/~s", [to_binary(T1), to_binary(T2), to_binary(T3), to_binary(T4)]).
+
+%% @doc 构建带参数的url
+%% url2([project, post], [{tag, "car"}])
+%%   <<"/project/post?tag=car">>
+%% @end
+url2(L1, L2) -> to_binary(url_acc(L1, L2, [], [])).
+url_acc([], [], Tokens1, Tokens2) ->
+    S1 = string:join([""|lists:reverse(Tokens1)], "/"),
+    case Tokens2 of
+        [] -> S1;
+        _ -> S1 ++ "?" ++ string:join(lists:reverse(Tokens2), "&")
+    end;
+url_acc([], [{K, V}|QueryParams], Tokens1, Tokens2) ->
+    S = io_lib:format("~ts=~ts", [to_binary(K), to_binary(V)]),
+    url_acc([], QueryParams, Tokens1, [S|Tokens2]);
+url_acc([H|T], QueryParams, Tokens1, Tokens2) ->
+    S = io_lib:format("~ts", [to_binary(H)]),
+    url_acc(T, QueryParams, [S|Tokens1], Tokens2).
