@@ -12,20 +12,29 @@
 -export([new/1, edit/1, show/1, query/1]).
 -export([edit_control/1, show_control/1, cell_control/1]).
 
-%% {Key, Option#{}}
+%% @doc 获取渲染control的函数
+%% 指定模块和函数
+control_fun([M, F], Field) -> M:F(Field);
+control_fun({M, F}, Field) -> M:F(Field);
+%% 指定匿名函数处理
+control_fun(Func, Field) when is_function(Func) -> Func(Field).
+
+%% #{Key, Option#{}}
 new(Model) -> edit(Model).
 
 edit(Model) ->
     #panel{class="ui form", body=[
-        lists:map(fun(#{edit_control:=[M, F]}=Field) ->
-            #panel{body=M:F(Field)}
+        lists:map(fun(Field) ->
+            Func = maps:get(edit_control, Field, fun edit_control/1),
+            #panel{body=control_fun(Func, Field)}
         end, Model)
     ]}.
 
 show(Model) ->
     #panel{class="ui form", body=[
-        lists:map(fun(#{show_control:=[M, F]}=Field) ->
-            #panel{body=M:F(Field)}
+        lists:map(fun(Field) ->
+            Func = maps:get(show_control, Field, fun show_control/1),
+            #panel{body=control_fun(Func, Field)}
         end, Model)
     ]}.
 

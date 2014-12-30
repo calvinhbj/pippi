@@ -18,8 +18,9 @@
 
 -define(default_theme_module, pp_theme_default).
 
-%% 未指定Theme参数时，使用默认值
+%% @doc 未指定处理函数时，使用默认theme
 %% 可接受{M, F}或Func的方式使用
+%% @end
 form(Model, {Module, FormName}) ->
     case erlang:function_exported(Module, FormName, 1) of
         true -> apply(Module, FormName, [Model]);
@@ -33,8 +34,9 @@ form(Model, [Module, FormName]) -> form(Model, {Module, FormName});
 form(Model, Func) when is_function(Func) -> Func(Model);
 form(_, _) -> [].
 
-%% form/3可渲染多行数据
+%% @doc form/3可渲染多行数据
 %% 多行渲染的用例包括数据表、列表展示等
+%% @end
 data_list(Model, FormName, RowsData) ->
     lists:map(fun(Data) ->
         Model2 = lists:map(fun(#{key:=K}=F) ->
@@ -45,7 +47,9 @@ data_list(Model, FormName, RowsData) ->
         end, Model),
         form(Model2, FormName)
     end, RowsData).
-%% 数据表
+%% @doc 数据表
+%% 仅支持默认theme
+%% @end
 data_table(Model, RowsData) ->
     [
         "<table class='ui table segment'>",
@@ -60,9 +64,9 @@ data_table(Model, RowsData) ->
         "<tbody>",
         lists:map(fun(Item) ->
             #tablerow{cells=[
-                lists:map(fun(#{key:=Key, cell_control:=[M, F]}=Field1) ->
+                lists:map(fun(#{key:=Key, cell_control:=Func}=Field1) ->
                     Field = Field1#{value=>maps:get(Key, Item, <<>>)},
-                    #tablecell{body=M:F(Field)}
+                    #tablecell{body=?default_theme_module:control_fun(Func, Field)}
                 end, Model),
                 #tablecell{body=[
                     #link{ body="查看", url=pp:url(Model, show, maps:get(<<"_id">>, Item)) }
@@ -73,7 +77,8 @@ data_table(Model, RowsData) ->
         "</table>"
     ].
 
-%% 查询经过动态渲染的表单中的值
+%% @doc 查询经过动态渲染的表单中的值
+%% @end
 query(Model) -> query(Model, ?default_theme_module).
 query(Model, Module) when is_atom(Module) ->
     case erlang:function_exported(Module, query, 1) of
@@ -82,7 +87,8 @@ query(Model, Module) when is_atom(Module) ->
     end;
 query(_, _) -> #{}.
 
-%% 查询单个字段属性: wfid和html_id
+%% @doc 查询单个字段属性: wfid和html_id
+%% @end
 html_id(Model, FieldName) -> wfid(Model, FieldName).
 wfid(Model, FieldName) ->
     Result = lists:filtermap(fun(#{key:=Key, id:=Id}) ->
