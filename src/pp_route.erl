@@ -18,5 +18,7 @@ route(Path) ->
     r(pp:to_binary(Path)).
 
 r(<<"/user/index">>) -> pippi_user_index;
+r(<<"/user/new">>) -> pippi_user_new;
 r(<<"/user/show/", Id/binary>>) -> {pippi_user_show, Id};
+r(<<"/user/edit/", Id/binary>>) -> {pippi_user_edit, Id};
 r(_Path) -> <<>>.
